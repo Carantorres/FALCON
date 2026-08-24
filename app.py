@@ -16,16 +16,20 @@ st.markdown("""
 st.markdown('<div class="falcon-title">FALCON</div>', unsafe_allow_html=True)
 st.markdown('<div class="falcon-subtitle">File Analysis and Learning for Classification and Organization Network</div>', unsafe_allow_html=True)
 
-# 2. Cargar todos los modelos y listas (AHORA CON EL MAPA DE PROYECTOS)
+# 2. Cargar todos los modelos y listas
 @st.cache_resource
 def load_ml_components():
     try:
-        model = joblib.load('modelo_entrenado.pkl.gz') # Recuerda usar tu archivo comprimido .gz
+        model = joblib.load('modelo_entrenado.pkl.gz') 
         vectorizer = joblib.load('vectorizador.pkl')
         features = joblib.load('features_cols.pkl')
         targets = joblib.load('target_cols.pkl')
         tenants = joblib.load('tenants_list.pkl')
-        tenant_project_map = joblib.load('tenant_project_map.pkl') # <--- NUEVO
+        raw_map = joblib.load('tenant_project_map.pkl') 
+        
+        # CORRECCIÓN: Convertir todas las llaves del mapa a minúsculas
+        tenant_project_map = {str(k).strip().lower(): v for k, v in raw_map.items()}
+        
         return model, vectorizer, features, targets, tenants, tenant_project_map
     except FileNotFoundError:
         return None, None, None, None, None, None
