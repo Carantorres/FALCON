@@ -16,36 +16,42 @@ st.markdown("""
 st.markdown('<div class="falcon-title">FALCON</div>', unsafe_allow_html=True)
 st.markdown('<div class="falcon-subtitle">File Analysis and Learning for Classification and Organization Network</div>', unsafe_allow_html=True)
 
-# 2. Cargar todos los modelos y listas
+# 2. Cargar todos los modelos y listas (AHORA CON EL MAPA DE PROYECTOS)
 @st.cache_resource
 def load_ml_components():
     try:
-        model = joblib.load('modelo_entrenado.pkl.gz')
+        model = joblib.load('modelo_entrenado.pkl.gz') # Recuerda usar tu archivo comprimido .gz
         vectorizer = joblib.load('vectorizador.pkl')
         features = joblib.load('features_cols.pkl')
         targets = joblib.load('target_cols.pkl')
         tenants = joblib.load('tenants_list.pkl')
-        projects = joblib.load('projects_list.pkl')
-        return model, vectorizer, features, targets, tenants, projects
+        tenant_project_map = joblib.load('tenant_project_map.pkl') # <--- NUEVO
+        return model, vectorizer, features, targets, tenants, tenant_project_map
     except FileNotFoundError:
         return None, None, None, None, None, None
 
-model, vectorizer, features, targets, tenants, projects = load_ml_components()
+model, vectorizer, features, targets, tenants, tenant_project_map = load_ml_components()
 
 if model is None:
-    st.error("Model files not found. Please ensure all 6 .pkl files are uploaded.")
+    st.error("Model files not found. Please ensure all required .pkl and .gz files are uploaded.")
     st.stop()
 
-# 3. Inputs del usuario (Con menús desplegables)
+# 3. Inputs del usuario (Con menús desplegables dependientes)
 st.markdown("### Asset Details")
 col1, col2 = st.columns(2)
 
 with col1:
+    # 1. El usuario elige el Tenant
     tenant_choice = st.selectbox("Tenant", options=tenants)
 
 with col2:
-    # Opción para elegir un proyecto existente o crear uno nuevo
-    project_options = ["-- New Project (Type Below) --"] + projects
+    # 2. Buscamos los proyectos específicos de ese Tenant en el mapa
+    # Si el tenant no tiene proyectos, devuelve una lista vacía []
+    tenant_lower = tenant_choice.strip().lower()
+    valid_projects = tenant_project_map.get(tenant_lower, [])
+    
+    # 3. Mostramos solo esos proyectos en el segundo menú
+    project_options = ["-- New Project (Type Below) --"] + valid_projects
     proj_choice = st.selectbox("Project", options=project_options)
 
 # Si elige crear uno nuevo, mostramos el campo de texto
@@ -64,16 +70,12 @@ if predict_button:
         st.error("Error: PDF Filenames are required to perform a prediction.")
     else:
         with st.spinner("Analyzing historical metadata..."):
-            # Normalizar a minúsculas
-            tenant_lower = tenant_choice.strip().lower()
             project_lower = project_final_input.strip().lower()
             
-            # 1. Transformar el texto con el Vectorizador de la IA
             clean_text = re.sub(r'[^a-z0-9]', ' ', pdf_input.lower())
             pdf_vec = vectorizer.transform([clean_text])
             pdf_vec_df = pd.DataFrame(pdf_vec.toarray(), columns=[f"word_{w}" for w in vectorizer.get_feature_names_out()])
             
-            # 2. Preparar variables de Tenant y Project
             cat_df = pd.DataFrame(0, index=[0], columns=[c for c in features if not c.startswith('word_')])
             t_col = f'tenant_{tenant_lower}'
             p_col = f'project_{project_lower}'
@@ -83,11 +85,9 @@ if predict_button:
             if p_col in cat_df.columns:
                 cat_df[p_col] = 1
                 
-            # 3. Unir todo en el formato exacto que el modelo espera
             X_input = pd.concat([cat_df, pdf_vec_df], axis=1)
-            X_input = X_input[features] # Ordenar columnas idéntico al entrenamiento
+            X_input = X_input[features] 
             
-            # 4. Predecir
             probas = model.predict_proba(X_input)
             
             results = []
@@ -99,7 +99,6 @@ if predict_button:
                     
             results = sorted(results, key=lambda x: x['probability'], reverse=True)
             
-            # 5. Mostrar resultados
             st.markdown("---")
             st.markdown("### Prediction Results")
             
