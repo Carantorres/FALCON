@@ -65,17 +65,22 @@ if predict_button:
         st.warning("Please provide at least a Tenant or PDF filenames.")
     else:
         with st.spinner("Analyzing historical patterns..."):
-            tenant = tenant_input.strip().lower()
-            project = project_input.strip().lower()
+            # Pasamos a minúsculas lo que escribe el usuario para comparar fácilmente
+            tenant_lower = tenant_input.strip().lower()
+            project_lower = project_input.strip().lower()
             pdfs = [p.strip() for p in pdf_input.split('\n') if p.strip()]
             
             input_features = pd.DataFrame(0, index=[0], columns=features)
             
-            if f'tenant_{tenant}' in features:
-                input_features[f'tenant_{tenant}'] = 1
-            if f'project_{project}' in features:
-                input_features[f'project_{project}'] = 1
+            # CORRECCIÓN DE MAYÚSCULAS/MINÚSCULAS (Case-insensitive matching)
+            for col in features:
+                # Revisamos si la columna en minúsculas coincide con tenant_lo-que-escribiste
+                if col.lower() == f'tenant_{tenant_lower}':
+                    input_features[col] = 1
+                if col.lower() == f'project_{project_lower}':
+                    input_features[col] = 1
                 
+            # Extraer features de los PDFs
             input_features['total_pdfs_count'] = len(pdfs)
             for pdf in pdfs:
                 pdf_lower = pdf.lower()
