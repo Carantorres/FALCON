@@ -20,7 +20,7 @@ st.markdown('<div class="falcon-subtitle">File Analysis and Learning for Classif
 @st.cache_resource
 def load_ml_components():
     try:
-        model = joblib.load('modelo_entrenado.pkl')
+        model = joblib.load('modelo_entrenado.pkl.gz')
         vectorizer = joblib.load('vectorizador.pkl')
         features = joblib.load('features_cols.pkl')
         targets = joblib.load('target_cols.pkl')
