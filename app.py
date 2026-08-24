@@ -2,19 +2,27 @@ import streamlit as st
 import pandas as pd
 import joblib
 import re
+import os
 
 # 1. Configuración de página (AHORA ES WIDE PARA USAR TODA LA PANTALLA)
 st.set_page_config(page_title="FALCON | Document AI", layout="wide")
 
 st.markdown("""
     <style>
-    .falcon-title { font-size: 3.5rem; font-weight: 800; color: #1E293B; margin-bottom: 0; padding-bottom: 0; }
     .falcon-subtitle { font-size: 1.1rem; font-weight: 400; color: #64748B; margin-top: 0; padding-top: 0; margin-bottom: 2.5rem; }
     .results-header { font-size: 1.5rem; font-weight: 600; color: #1E293B; margin-bottom: 1.2rem; border-bottom: 2px solid #E2E8F0; padding-bottom: 0.5rem;}
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="falcon-title">FALCON</div>', unsafe_allow_html=True)
+# --- NUEVO: CARGAR EL LOGO EN LUGAR DE TEXTO ---
+# Verificamos si el logo existe para evitar errores en caso de que tarde en cargar
+if os.path.exists("Falcon.png"):
+    # Le damos un ancho de 350px para que no ocupe toda la pantalla (dado que es de 4096px)
+    st.image("Falcon.png", width=350) 
+else:
+    # Si por alguna razón no encuentra la imagen, pone el texto por defecto
+    st.markdown('<div style="font-size: 3.5rem; font-weight: 800; color: #1E293B;">FALCON</div>', unsafe_allow_html=True)
+
 st.markdown('<div class="falcon-subtitle">File Analysis and Learning for Classification and Organization Network</div>', unsafe_allow_html=True)
 
 # 2. Cargar todos los modelos
@@ -80,7 +88,6 @@ with right_col:
         project_lower = project_final_input.strip().lower()
         clean_text = re.sub(r'[^a-z0-9]', ' ', pdf_input.lower())
         
-        # Validar que el texto limpio tenga algo
         if not clean_text.strip():
             st.info("👈 Please enter valid filename characters.")
         else:
